@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker build -t py3 . && docker run --user user -it --rm -v "$(pwd):/app" py3
