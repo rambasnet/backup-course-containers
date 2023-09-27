@@ -1,3 +1,19 @@
 #!/bin/bash
 
-docker build -t py3 . && docker run --user user -it --rm -v "$(pwd):/app" py3
+cleanup() {
+    docker stop $id
+}
+
+# Trap SIGINT and call the cleanup function
+if ! docker build -t py3 .
+then
+    echo "build failed."
+    exit 1
+fi
+   
+id=$(docker run --detach --user user -it --rm -v "$(pwd):/app" py3)
+
+trap cleanup SIGINT
+docker logs -f $id &
+docker exec -it $id bash -i
+cleanup
