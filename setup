@@ -6,7 +6,7 @@ then
    echo "setup must be in repo"
    exit 1
 fi
-
+# find "$repo" -name ".pre-commit-$current_branch" -execdir ./{} \;
 cat >"$repo/.git/hooks/pre-commit" <<END
 #!/bin/bash
 pre_commit_exec() {
