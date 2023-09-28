@@ -1,0 +1,22 @@
+#!/bin/bash
+
+repo="$(git rev-parse --show-toplevel)"
+if [ $? -ne 0 ]
+then
+   echo "setup must be in repo"
+   exit 1
+fi
+
+cat >"$repo/.git/hooks/pre-commit" <<END
+#!/bin/bash
+pre_commit_exec() {
+  cd "\$(basename "\$1")" && exec "\$1"
+}
+export -f pre_commit_exec
+
+repo="\$(git rev-parse --show-toplevel)"
+current_branch="\$(git rev-parse --abbrev-ref HEAD)"
+find "\$repo" -name ".pre-commit-\$current_branch" -exec bash pre_commit_exec {} \; -o -quit
+END
+chmod +x "$repo/.git/hooks/pre-commit"
+
