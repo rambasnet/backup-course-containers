@@ -1,19 +1,37 @@
 #!/bin/bash
 
+# directory (absolute path) of this run script
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# tag derived from directory ("In/This Folder" becomes "this_folder")
+tag=$(basename "$here" | tr '[:upper:]' '[:lower:]')
+tag="${tag// /_}"
+
+# bash cleanup
 cleanup() {
     docker stop $id
 }
 
-# Trap SIGINT and call the cleanup function
-if ! docker build -t py3 .
+# build container or exit with failure
+if ! docker build -t $tag .
 then
-    echo "build failed."
+    echo "build $tag in '$here' failed." &>2
     exit 1
 fi
-   
-id=$(docker run --detach --user user -it --rm -v "$(pwd):/app" py3)
 
-trap cleanup SIGINT
+# run container in background
+id=$(docker run --detach --user user -it --rm -v "$(pwd):/app" $tag)
+if [ $? -ne 0 ]
+then
+    echo "run $tag in '$here' failed." &>2
+    exit 1
+fi
+
+# make sure we clean up running container
+trap cleanup SIGINT SIGTERM EXIT
+
+# show output of container (output of continuous testing)
 docker logs -f $id &
+
+# log into container or run specific command
 docker exec -it $id bash -i
-cleanup
