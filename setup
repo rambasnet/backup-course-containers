@@ -6,19 +6,11 @@ then
    echo "setup must be in repo"
    exit 1
 fi
-# find "$repo" -name ".pre-commit-$current_branch" -execdir ./{} \;
-cat >"$repo/.git/hooks/pre-commit" <<END
+
+cat >"$repo/.git/hooks/pre-push" <<END
 #!/bin/bash
-pre_commit_exec() {
-  cd "\$(basename "\$1")" && exec "\$1"
-}
-export -f pre_commit_exec
-
-repo="\$(git rev-parse --show-toplevel)"
-current_branch="\$(git rev-parse --abbrev-ref HEAD)"
-find "\$repo" -name ".pre-commit-\$current_branch" -exec bash pre_commit_exec {} \; -o -quit
+export repo="\$(git rev-parse --show-toplevel)"
+export branch="\$(git rev-parse --abbrev-ref HEAD)"
+find "\$repo" -name ".pre-push-\$branch" \( -execdir ./{} \; -or -quit \)
 END
-chmod +x "$repo/.git/hooks/pre-commit"
-
-cp "$repo/.git/hooks/pre-commit" "$repo/.git/hooks/pre-merge-commit"
-cp "$repo/.git/hooks/pre-commit" "$repo/.git/hooks/pre-push"
+chmod +x "$repo/.git/hooks/pre-push"
