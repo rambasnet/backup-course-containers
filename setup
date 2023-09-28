@@ -9,8 +9,30 @@ fi
 
 cat >"$repo/.git/hooks/pre-push" <<END
 #!/bin/bash
+
+# set process id to kill on error
+if [ -z "\${err_pid+x}" ]
+then
+    export err_pid=\$\$
+fi
+
+# print error and die
+err() {
+    if [ \$# -gt 0 ]
+    then
+	>&2 echo "\$@"
+    fi
+    kill -SIGTERM \$err_pid
+}
+export -f err
+
+run_or_err() {
+    "\$@" || err failed "\$cmd" "\$@"
+}
+export -f run_or_err
+
 export repo="\$(git rev-parse --show-toplevel)"
 export branch="\$(git rev-parse --abbrev-ref HEAD)"
-find "\$repo" -name ".pre-push-\$branch" \( -execdir ./{} \; -or -quit \)
+find "\$repo" -name ".pre-push-\$branch" -execdir bash -x -c 'run_or_err "\$1"' run_or_err ./{} \;
 END
 chmod +x "$repo/.git/hooks/pre-push"
