@@ -20,3 +20,5 @@ find "\$repo" -name ".pre-commit-\$current_branch" -exec bash pre_commit_exec {}
 END
 chmod +x "$repo/.git/hooks/pre-commit"
 
+cp "$repo/.git/hooks/pre-commit" "$repo/.git/hooks/pre-merge-commit"
+cp "$repo/.git/hooks/pre-commit" "$repo/.git/hooks/pre-push"
