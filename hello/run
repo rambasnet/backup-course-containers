@@ -28,6 +28,13 @@ cleanup() {
     docker stop $id
 }
 
+if tty -s
+then
+    tty_arg=-it
+else
+    tty_arg=
+fi
+
 # build container or exit with failure
 docker build -t "$tag" "$here" || err "build $tag in '$here' failed."
 
@@ -44,7 +51,7 @@ then
     docker logs -f $id &
 
     # log into container
-    docker exec -it $id bash -i
+    docker exec $tty_arg $id bash -i
 else
-    docker run --user user -it --rm -v "$(pwd):/app" $tag "$@"
+    docker run --user user $tty_arg --rm -v "$(pwd):/app" $tag "$@"
 fi
