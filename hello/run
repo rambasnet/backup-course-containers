@@ -29,7 +29,7 @@ cleanup() {
 }
 
 # build container or exit with failure
-docker build -t $tag . || err "build $tag in '$here' failed."
+docker build -t "$tag" "$here" || err "build $tag in '$here' failed."
 
 if [ $# -eq 0 ]
 then
