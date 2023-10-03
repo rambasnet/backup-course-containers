@@ -1,38 +1,72 @@
-#!/bin/bash
+#!/bin/sh
 
-repo="$(git rev-parse --show-toplevel)"
+repo=`git rev-parse --show-toplevel`
 if [ $? -ne 0 ]
 then
    echo "setup must be in repo"
    exit 1
 fi
 
-cat >"$repo/.git/hooks/pre-push" <<END
-#!/bin/bash
+#
+# add find-hook that 
+#
+for hook in \
+    applypatch-msg commit-msg fsmonitor-watchman \
+		   post-update pre-applypatch pre-commit \
+		   pre-merge-commit pre-push pre-rebase \
+		   pre-receive prepare-commit-msg \
+		   push-to-checkout update
+do
+cat >"$repo/.git/hooks/$hook" <<END
+#!/bin/sh
 
-# set process id to kill on error
-if [ -z "\${err_pid+x}" ]
-then
-    export err_pid=\$\$
-fi
+#
+#  Look through repo for directory-local $hook hooks in folders that
+#  have files that are tracked by git.
+#
+#  For example, if you want to add a $hook pre-check /android folder,
+#  that is run on the main branch, then create an executable script
+#  as the /repo/android/.$hook-main file or
+#  in the /repo/android/.$hook-main directory
+#  
+#
 
-# print error and die
-err() {
-    if [ \$# -gt 0 ]
+# directory of git repo
+export repo=\`git rev-parse --show-toplevel\`
+
+# current branch
+export branch=\`git rev-parse --abbrev-ref HEAD\`
+
+# which hook
+export hook=$hook
+
+# look at all directories with tracked files
+git ls-tree --full-tree --name-only -r HEAD | xargs dirname | sort | uniq | while read -r dir
+do
+  script="\$repo/\$dir/.${hook}-\$branch"
+  if [ -f "\$script" && -x "\$script" ]
+  then
+    if ! ( cd "\$repo/\$dir" && exec "\$script" )
     then
-	>&2 echo "\$@"
+      echo "\$repo/\$dir/.${hook}-\$branch" failed.
+      exit 1
     fi
-    kill -SIGTERM \$err_pid
-}
-export -f err
-
-run_or_err() {
-    "\$@" || err failed "\$cmd" "\$@"
-}
-export -f run_or_err
-
-export repo="\$(git rev-parse --show-toplevel)"
-export branch="\$(git rev-parse --abbrev-ref HEAD)"
-find "\$repo" -name ".pre-push-\$branch" -execdir bash -x -c 'run_or_err "\$1"' run_or_err ./{} \;
+  fi
+  if [ -d "\$script" ]
+  then
+    for subscript in "\$script"/[a-zA-Z]*[a-zA-Z0-9]
+    do
+      if [ -x "\$subscript" ]
+      then
+        if ! ( cd "\$repo/\$dir" && exec "\$subscript" )
+        then
+          echo "\$subscript failed."
+          exit 1
+        fi
+      fi
+    done
+  fi
+done
 END
-chmod +x "$repo/.git/hooks/pre-push"
+chmod +x "$repo/.git/hooks/$hook"
+done
