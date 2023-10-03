@@ -18,7 +18,7 @@ for hook in \
 		   push-to-checkout update
 do
 cat >"$repo/.git/hooks/$hook" <<END
-#!/bin/sh -f
+#!/bin/sh
 
 #
 #  Look through repo for directory-local $hook hooks in folders that
