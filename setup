@@ -44,7 +44,7 @@ export hook=$hook
 git ls-tree --full-tree --name-only -r HEAD | xargs dirname | sort | uniq | while read -r dir
 do
   script="\$repo/\$dir/.${hook}-\$branch"
-  if [ -f "\$script" && -x "\$script" ]
+  if [ -f "\$script" -a -x "\$script" ]
   then
     if ! ( cd "\$repo/\$dir" && exec "\$script" )
     then
